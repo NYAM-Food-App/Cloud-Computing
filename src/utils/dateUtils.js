@@ -1,5 +1,3 @@
-// src/utils/dateUtils.js
-
 /**
  * Menghitung usia berdasarkan tanggal lahir
  * @param {string} birthdate - Tanggal lahir dalam format ISO (yyyy-mm-dd)

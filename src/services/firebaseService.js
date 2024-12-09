@@ -1,45 +1,40 @@
 const admin = require('firebase-admin');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
-const dotenv = require('dotenv');
+require('dotenv').config();
 
-// Load environment variables from .env file
-dotenv.config();
-
-// Inisialisasi Firebase Admin SDK
+// Initialize Firebase Admin SDK
 const serviceAccount = require('../../serviceAccountKey.json');
 
 try {
-  // Inisialisasi Firebase Admin
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-  console.log("Firebase admin initialized successfully");
+  console.log("Firebase Admin initialized successfully");
 } catch (error) {
-  console.error("Error initializing Firebase admin:", error);
+  console.error("Error initializing Firebase Admin:", error);
 }
 
-// Inisialisasi Google Cloud Storage
+// Initialize Google Cloud Storage
 let storage;
 try {
-  // Inisialisasi Google Cloud Storage menggunakan service account key
   storage = new Storage({
-    keyFilename: path.join(__dirname, '../../serviceAccountKey.json'), // Path ke file kunci service account
+    keyFilename: path.join(__dirname, '../../serviceAccountKey.json'),
   });
   console.log("Google Cloud Storage initialized successfully");
 } catch (error) {
   console.error("Error initializing Google Cloud Storage:", error);
 }
 
-// Ambil nama bucket dari .env
+// Get bucket name from .env
 const bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET;
 
 if (!bucketName) {
   console.error('Google Cloud Storage bucket name is missing in .env');
-  process.exit(1);  // Keluar jika tidak ada nama bucket
+  process.exit(1); // Exit if bucket name is missing
 }
 
-// Tentukan bucket yang digunakan untuk menyimpan file
+// Specify the bucket for storing files
 const bucket = storage ? storage.bucket(bucketName) : null;
 
 const db = admin.firestore();

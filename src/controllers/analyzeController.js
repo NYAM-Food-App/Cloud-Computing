@@ -2,7 +2,7 @@ const { sendImageToFoodRecognitionApi } = require('../utils/foodImageRecognition
 const { queryEdamamApi } = require('../utils/edamamApiUtils');
 const { db, admin } = require('../services/firebaseService');
 
-// Helper function to determine meal type based on time
+// Helper function to determine meal type based on time of day
 const getMealType = () => {
     const now = new Date();
     const hour = now.getHours();
@@ -11,15 +11,15 @@ const getMealType = () => {
     return ['Dinner', 'Snack', 'Teatime'];
 };
 
-// Helper function to calculate nutrients query
+// Helper function to calculate the remaining nutrient values
 const getNutrientsQuery = (dailyNeeds = {}, fulfilledNeeds = {}) => {
     const nutrientsQuery = {};
 
     const calculateRange = (key) => {
-        const dailyValue = dailyNeeds[key] || 0; // Ambil nilai dari map, default ke 0 jika tidak ada
-        const fulfilledValue = fulfilledNeeds[key] || 0; // Ambil nilai dari map, default ke 0 jika tidak ada
+        const dailyValue = dailyNeeds[key] || 0;
+        const fulfilledValue = fulfilledNeeds[key] || 0;
         const remaining = dailyValue - fulfilledValue;
-        return remaining > 0 ? `${remaining}` : null; // Hanya kirim jika nilai positif
+        return remaining > 0 ? `${remaining}` : null;
     };
 
     const carbs = calculateRange('carbs');
@@ -36,15 +36,20 @@ const getNutrientsQuery = (dailyNeeds = {}, fulfilledNeeds = {}) => {
     return nutrientsQuery;
 };
 
+// Helper function to get a random subset of items from an array
+const getRandomItems = (array, count) => {
+    if (array.length <= count) return array;
+    const shuffled = array.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+};
+
 const analyzeFood = async (req, res) => {
     const { uid } = req.params;
+    const { queryText } = req.body;
     const image = req.file;
 
     try {
-        // Waktu request dalam format Firestore Timestamp
-        const requestTime = admin.firestore.Timestamp.now();
-
-        // Verifikasi pengguna di Firestore
+        // Verify user in Firestore
         const userDocRef = db.collection('users').doc(uid);
         const userDoc = await userDocRef.get();
 
@@ -52,8 +57,8 @@ const analyzeFood = async (req, res) => {
             return res.status(404).json({ error: 'User not found in Firestore' });
         }
 
-        if (!image) {
-            return res.status(400).json({ error: 'No image provided' });
+        if (!image && !queryText) {
+            return res.status(400).json({ error: 'No image or query text provided' });
         }
 
         const userData = userDoc.data();
@@ -62,15 +67,26 @@ const analyzeFood = async (req, res) => {
         const mealType = getMealType();
         const nutrients = getNutrientsQuery(userData.dailyNeeds, userData.fulfilledNeeds);
 
-        // Prediksi makanan
-        const foodRecognitionResult = await sendImageToFoodRecognitionApi(image);
-        if (!foodRecognitionResult.predicted_class) {
-            return res.status(400).json({ error: 'Failed to predict food' });
+        // Predict food class
+        let predictedClass = '';
+
+        // If image is provided, analyze the image to get predictedClass
+        let foodRecognitionResult = null;
+        if (image) {
+            try {
+                foodRecognitionResult = await sendImageToFoodRecognitionApi(image);
+                predictedClass = foodRecognitionResult.predicted_class;
+            } catch (error) {
+                return res.status(400).json({ error: error.message });
+            }
         }
 
-        const predictedClass = foodRecognitionResult.predicted_class;
+        // If query text is provided, use it as predictedClass
+        if (queryText) {
+            predictedClass = queryText;
+        }
 
-        // Pencarian resep berdasarkan prediksi
+        // Search recipes based on the prediction
         const edamamResponse = await queryEdamamApi(predictedClass, {
             health,
             cuisineType,
@@ -78,11 +94,22 @@ const analyzeFood = async (req, res) => {
             nutrients,
         });
 
-        // Ambil maksimal 5 resep dan format hasilnya
-        const recipes = edamamResponse.hits.slice(0, 5).map((hit) => {
+        if (!edamamResponse.hits || edamamResponse.hits.length === 0) {
+            return res.status(200).json({
+                message: 'No recipes found for the given prediction.',
+                foodPrediction: {
+                    predictedClass,
+                    predictedProb: foodRecognitionResult?.predicted_prob || null,
+                },
+                recipes: [],
+            });
+        }
+
+        // Get up to 5 random recipes
+        const recipes = getRandomItems(edamamResponse.hits, 5).map((hit) => {
             const recipe = hit.recipe;
 
-            // Pilih gambar terbaik berdasarkan prioritas
+            // Select the best image based on priority
             const image =
                 recipe.images?.LARGE?.url ||
                 recipe.images?.REGULAR?.url ||
@@ -90,7 +117,7 @@ const analyzeFood = async (req, res) => {
                 recipe.images?.THUMBNAIL?.url ||
                 null;
 
-            // Bersihkan data undefined
+            // Clean up undefined data
             return {
                 foodname: recipe.label || null,
                 image,
@@ -99,29 +126,36 @@ const analyzeFood = async (req, res) => {
                 ingredients: recipe.ingredientLines || null,
                 cuisineType: recipe.cuisineType || null,
                 mealType: recipe.mealType || null,
-                dishType: recipe.dishType || null, // Ganti undefined dengan null
+                dishType: recipe.dishType || null, // Replace undefined with null
                 fulfilledNeeds: {
-                    calories: recipe.totalNutrients?.ENERC_KCAL?.quantity || 0,
-                    fat: recipe.totalNutrients?.FAT?.quantity || 0,
-                    carbs: recipe.totalNutrients?.CHOCDF?.quantity || 0,
-                    protein: recipe.totalNutrients?.PROCNT?.quantity || 0,
+                    calories: recipe.totalNutrients?.ENERC_KCAL?.quantity 
+                        ? parseFloat(recipe.totalNutrients.ENERC_KCAL.quantity.toFixed(2)) 
+                        : 0,
+                    fat: recipe.totalNutrients?.FAT?.quantity 
+                        ? parseFloat(recipe.totalNutrients.FAT.quantity.toFixed(2)) 
+                        : 0,
+                    carbs: recipe.totalNutrients?.CHOCDF?.quantity 
+                        ? parseFloat(recipe.totalNutrients.CHOCDF.quantity.toFixed(2)) 
+                        : 0,
+                    protein: recipe.totalNutrients?.PROCNT?.quantity 
+                        ? parseFloat(recipe.totalNutrients.PROCNT.quantity.toFixed(2)) 
+                        : 0,
                 },
             };
         });
 
-        // Simpan rekomendasi ke Firestore
+        // Save recommendations to Firestore
         await userDocRef.update({
             foodRecommendations: recipes,
-            selectedFood: null, // Reset jika ada pilihan sebelumnya
+            selectedFood: null, // Reset if any previous selection
         });
 
-        // Respon ke pengguna
+        // Respond to the user
         return res.status(200).json({
             message: 'Prediction and recipe retrieval successful',
-            requestTime: requestTime.toDate(), // Format sebagai ISO Date untuk pengguna
             foodPrediction: {
                 predictedClass,
-                predictedProb: foodRecognitionResult.predicted_prob,
+                predictedProb: foodRecognitionResult ? foodRecognitionResult.predicted_prob : null,
             },
             recipes,
         });
@@ -132,4 +166,3 @@ const analyzeFood = async (req, res) => {
 };
 
 module.exports = { analyzeFood };
-

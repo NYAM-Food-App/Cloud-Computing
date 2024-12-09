@@ -1,45 +1,55 @@
-// src/utils/foodImageRecognitionUtils.js
 const axios = require('axios');
 const dotenv = require('dotenv');
 const FormData = require('form-data');
 
-// Memuat variabel dari file .env
+// Load environment variables
 dotenv.config();
 
-const foodImageRecognitionApiUrl = process.env.FOOD_IMAGE_RECOGNITION_API_URL;
+const nyamFlaskApiUrl = process.env.NYAM_FLASK_API;
 
 const axiosInstance = axios.create({
-    baseURL: foodImageRecognitionApiUrl,
-    headers: {
-        'Content-Type': 'multipart/form-data'
-    }
+  baseURL: nyamFlaskApiUrl,
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
 });
 
+/**
+ * Sends an image to the external food recognition API for prediction.
+ * @param {Object} image - The image object containing the buffer.
+ * @returns {Promise<Object>} The API response data.
+ * @throws {Error} Throws an error if the image is invalid or the API request fails.
+ */
 const sendImageToFoodRecognitionApi = async (image) => {
-    try {
-        // Pastikan bahwa file gambar diterima dengan benar
-        if (!image || !image.buffer) {
-            throw new Error('No image provided or invalid image');
-        }
-
-        // Membuat FormData dan menambahkan file gambar
-        const formData = new FormData();
-        formData.append('file', image.buffer, { filename: 'image.jpg', contentType: 'image/jpeg' });
-
-        // Mengirimkan gambar ke API eksternal
-        const response = await axiosInstance.post('/food', formData, {
-            headers: {
-                ...formData.getHeaders()
-            }
-        });
-
-        return response.data;
-    } catch (error) {
-        console.error("Error details:", JSON.stringify(error, null, 2));  // Log the detailed error
-        throw new Error(error.response ? JSON.stringify(error.response.data) : 'Internal Server Error');
+  try {
+    // Ensure a valid image is provided
+    if (!image || !image.buffer) {
+      throw new Error('No image provided or invalid image');
     }
+
+    // Create FormData and append the image file
+    const formData = new FormData();
+    formData.append('file', image.buffer, { filename: 'image.jpg', contentType: 'image/jpeg' });
+
+    // Send the image to the external API
+    const response = await axiosInstance.post('/food', formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+    });
+
+    return response.data; // Return API response data
+  } catch (error) {
+    // Handle specific Flask API errors (e.g., 400 Bad Request)
+    if (error.response && error.response.status === 400) {
+      throw new Error(error.response.data.message || 'Image prediction failed.');
+    }
+
+    // Throw other errors
+    throw new Error(error.message || 'Internal Server Error');
+  }
 };
 
 module.exports = {
-    sendImageToFoodRecognitionApi
+  sendImageToFoodRecognitionApi,
 };

@@ -3,7 +3,7 @@ const { chooseFood } = require('../controllers/foodController');
 
 const router = express.Router();
 
-// Endpoint untuk memilih makanan
+// Endpoint to choose food based on user UID
 router.post('/:uid', chooseFood);
 
 module.exports = router;

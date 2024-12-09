@@ -5,58 +5,60 @@ const { calculateBMRRate } = require('../utils/bmrUtils');
 
 const userController = {
   /**
-   * Mendapatkan profil pengguna berdasarkan UID
+   * Retrieve user profile based on UID
    */
   async getUserProfile(req, res) {
     try {
       const { uid } = req.params;
+      // Get user data from the database
       const user = await userModel.getUser(uid);
 
+      // If the user is not found, send a 404 response
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
 
+      // Send user profile data in the response
       res.status(200).json(user);
     } catch (error) {
+      // Handle server errors
       res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   },
 
   /**
-   * Memperbarui profil pengguna berdasarkan UID
+   * Update user profile based on UID
    */
   async updateUserProfile(req, res) {
     try {
       const { uid } = req.params;
       const { fullname, birthdate, gender, allergy, height, weight } = req.body;
 
-      // Validasi data wajib
+      // Validate mandatory fields
       if (!fullname || !birthdate || gender === undefined || !height || !weight) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      // Hitung usia
+      // Calculate age from birthdate
       const age = calculateAge(birthdate);
 
-
-      // Ambil data user yang ada untuk mempertahankan fulfilledNeeds
+      // Retrieve the existing user to keep their fulfilledNeeds intact
       const existingUser = await userModel.getUser(uid);
       if (!existingUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Hitung ulang BMI, BMR dan dailyNeeds
+      // Recalculate BMI, daily needs, and BMR rate
       const bmi = calculateBMI(weight, height);
       const dailyNeeds = calculateDailyNeeds(weight, height, age, gender);
-      const bmrRate = await calculateBMRRate(gender, height, weight, bmi); // Panggil API BMR
+      const bmrRate = await calculateBMRRate(gender, height, weight, bmi); // Call the BMR API
 
-
-      // Siapkan data untuk diperbarui
+      // Prepare the data to be updated
       const updateData = {
         fullname,
         birthdate,
         gender,
-        allergy: allergy || null, // Default null jika tidak diisi
+        allergy: allergy || null, // Set to null if not provided
         height,
         weight,
         bmi,
@@ -64,11 +66,13 @@ const userController = {
         bmrRate,
       };
 
-      // Update data tanpa mengubah fulfilledNeeds
+      // Update the user profile while retaining fulfilledNeeds
       await userModel.updateUser(uid, { ...updateData, fulfilledNeeds: existingUser.fulfilledNeeds });
 
+      // Respond with success message and updated data
       res.status(200).json({ message: 'User profile updated successfully!', updatedData: updateData });
     } catch (error) {
+      // Handle server errors
       res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   },

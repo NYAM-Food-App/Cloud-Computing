@@ -6,8 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const analyzeRoutes = require('./routes/analyzeRoutes');
 const foodRoutes = require('./routes/foodRoutes');
-const foodHistoryRoutes = require('./routes/foodHistoryRoutes'); // Import route baru untuk foodHistory
-
+const foodHistoryRoutes = require('./routes/foodHistoryRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -23,8 +22,6 @@ app.use('/analyze', analyzeRoutes);
 app.use('/choose/food', foodRoutes);
 app.use('/history/food', foodHistoryRoutes);
 
-
-
 app.listen(PORT, () => {
-  console.log(`Server running on PORT:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

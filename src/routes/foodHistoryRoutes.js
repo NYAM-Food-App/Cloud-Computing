@@ -2,10 +2,10 @@ const express = require('express');
 const { getFoodHistory, getFoodHistoryDetail } = require('../controllers/foodHistoryController');
 const router = express.Router();
 
-// Route untuk menampilkan foodHistory berdasarkan UID pengguna
+// Route to get food history based on user UID
 router.get('/:uid', getFoodHistory);
 
-// Route untuk menampilkan detail foodHistory berdasarkan UID dan index
+// Route to get food history details based on UID and history index
 router.get('/:uid/:historyIndex', getFoodHistoryDetail);
 
 module.exports = router;

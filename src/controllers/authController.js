@@ -25,6 +25,12 @@ const authController = {
       } catch (error) {
         return res.status(401).json({ message: 'Invalid UID: User not found in Firebase Authentication' });
       }
+
+      // Check if the user already exists in Firestore
+      const existingUser = await userModel.getUser(uid);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this UID already exists!' }); // 409 Conflict
+      }
   
       // Calculate age from birthdate
       const age = calculateAge(birthdate);

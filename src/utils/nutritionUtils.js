@@ -28,13 +28,14 @@ function calculateDailyNeeds(weight, height, age, gender) {
   }
 
   // Calculate Basal Metabolic Rate (BMR)
+  // Calculate Basal Metabolic Rate (BMR)
   let bmr;
   if (gender === 0) {
     // Male
-    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    bmr = 66.5 + (13.75 * weight) + (5 * height) - (6.75 * age);
   } else if (gender === 1) {
     // Female
-    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    bmr = 655.1 + (9.563 * weight) + (1.85 * height) - (4.676 * age);
   } else {
     throw new Error('Invalid gender value. Use 0 for male and 1 for female');
   }

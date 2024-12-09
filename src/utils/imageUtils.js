@@ -12,7 +12,7 @@ const GOOGLE_CLOUD_STORAGE_BUCKET = process.env.GOOGLE_CLOUD_STORAGE_BUCKET;
  * @returns {string} The sanitized file name.
  */
 const sanitizeFileName = (name) => {
-  return name.replace(/[<>:"/\\|?*]+/g, '_'); // Replace illegal characters with '_'
+  return name.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]+/g, '_'); // Replace spaces and illegal characters with '_'
 };
 
 /**
@@ -40,7 +40,7 @@ const downloadImageAndUpload = async (imageUrl, fileName) => {
 
     // Download the image from the URL
     const response = await axios({
-      url: imageUrl,
+      url: imageUrl.replace(/\s/g, '%20'), // Replace spaces in the URL with '%20'
       responseType: 'stream', // Read the image as a stream
     });
 

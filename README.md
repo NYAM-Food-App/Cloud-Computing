@@ -57,8 +57,7 @@ Refer to the [Main API README](https://github.com/NYAM-Food-App/Cloud-Computing/
 ## Prerequisites
 
 - **Google Cloud Product (Or Another Cloud Provider)**: For deploying.
-- **Docker**: For containerizing applications.
-- **Firebase CLI**: For managing Firebase services.
-- **Python 3.8+**: Required for running Python-based APIs and scripts.
+- **Machine Learning Model**: For image recognition, and BMR Rate Calculator. Refer to the [Machine Learning Repositories](https://github.com/NYAM-Food-App/Machine-Learning). Or Another Model.
+- **Mobile Apps**: For use this application. Refer to the [Mobile Develpoment Repositories](https://github.com/NYAM-Food-App/Mobile-Development). Or Another Front-End Application.
 
 ---

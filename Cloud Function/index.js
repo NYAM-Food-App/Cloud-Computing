@@ -1,7 +1,10 @@
 const admin = require('firebase-admin');
 
 // Inisialisasi Firebase Admin SDK
-admin.initializeApp();
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  projectId: 'nyam-c242-ps136',
+});
 const db = admin.firestore();
 
 // Fungsi untuk mereset field fulfilledNeeds

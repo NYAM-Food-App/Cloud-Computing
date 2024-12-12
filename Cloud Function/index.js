@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 // Inisialisasi Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  projectId: 'nyam-c242-ps136',
+  projectId: 'your gcp-project-id',
 });
 const db = admin.firestore();
 

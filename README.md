@@ -6,7 +6,7 @@ Welcome to the **NYAM** Cloud Computing repository! This repository is part of t
 
 ## Cloud Architecture
 
-![Cloud Architecture](https://github.com/NYAM-Food-App/Cloud-Computing/blob/main/CloudArchitecture.png)
+![Cloud Architecture](https://github.com/NYAM-Food-App/Cloud-Computing/blob/master/CloudArchitecture.png)
 
 ### Key Components:
 
